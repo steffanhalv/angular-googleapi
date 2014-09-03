@@ -45,14 +45,14 @@ angular.module('googleApi', [])
             var deferred = $q.defer();
             return {
                 login: function () {
-                    gapi.auth.authorize({ client_id: config.clientId, scope: config.scopes, immediate: false}, this.handleAuthResult);
+                    gapi.auth.authorize({ client_id: config.clientId, scope: config.scopes, immediate: false }, this.handleAuthResult);
 
                     return deferred.promise;
                 },
 
                 handleClientLoad: function () {
-                    gapi.auth.init(function () { });
-                    window.setTimeout(checkAuth, 1);
+                    // gapi.auth.init(function () { });
+                    window.setTimeout(this.checkAuth, 1);
                 },
 
                 checkAuth: function() {
@@ -60,6 +60,7 @@ angular.module('googleApi', [])
                 },
 
                 handleAuthResult: function(authResult) {
+                    debugger
                     if (authResult && !authResult.error) {
                         var data = {};
                         $rootScope.$broadcast("google:authenticated", authResult);
@@ -92,22 +93,145 @@ angular.module('googleApi', [])
 
         });
 
+
     })
 
-		.service("googlePlus", function(googleApiBuilder, $rootScope) {
+    .service("googleMail", function(googleApiBuilder, $rootScope) {
 
-				var self = this;
-				var itemExtractor = function(resp) { return resp.items; };
+        var self = this;
+        var itemExtractor = function(resp) { return resp; };
+        var processMessage = function(email) {
+            // TODO: get email text, html, attachments etc.
+            return email;
+        };
 
-				googleApiBuilder.afterClientLoaded(function() {
-						gapi.client.load('plus', 'v1', function() {
-							self.getPeople = googleApiBuilder.build(gapi.client.plus.people.get);
-							self.getCurrentUser = function() {
-								return self.getPeople({userId: "me"});
-							}
-							$rootScope.$broadcast("googlePlus:loaded")
-						});
+        googleApiBuilder.afterClientLoaded(function() {
+            gapi.client.load('gmail', 'v1', function() {
 
-				});
+                self.listThreads = googleApiBuilder.build(gapi.client.gmail.users.threads.list);
+                self.getThread = googleApiBuilder.build(gapi.client.gmail.users.threads.get);
 
-		})
+                self.listMessages = googleApiBuilder.build(gapi.client.gmail.users.messages.list);
+                self.getMessage = googleApiBuilder.build(gapi.client.gmail.users.messages.get, processMessage);
+                // self.listCalendars = googleApiBuilder.build(gapi.client.calendar.calendarList.list, itemExtractor);
+                // self.createEvent = googleApiBuilder.build(gapi.client.calendar.events.insert);
+
+
+
+                // self.draftsCreate = googleApiBuilder.build(gapi.client.gmail.users.drafts.create)
+                // self.draftsDelete = googleApiBuilder.build(gapi.client.gmail.users.drafts.delete)
+                // self.draftsGet = googleApiBuilder.build(gapi.client.gmail.users.drafts.get)
+                // self.draftsList = googleApiBuilder.build(gapi.client.gmail.users.drafts.list)
+                // self.draftsSend = googleApiBuilder.build(gapi.client.gmail.users.drafts.send)
+                // self.draftsUpdate = googleApiBuilder.build(gapi.client.gmail.users.drafts.update)
+                // self.historyList = googleApiBuilder.build(gapi.client.gmail.users.history.list)
+                // self.labelsCreate = googleApiBuilder.build(gapi.client.gmail.users.labels.create)
+                self.labelsDelete = googleApiBuilder.build(gapi.client.gmail.users.labels.delete)
+                self.labelsGet = googleApiBuilder.build(gapi.client.gmail.users.labels.get)
+                self.labelsList = googleApiBuilder.build(gapi.client.gmail.users.labels.list)
+                // self.labelsPatch = googleApiBuilder.build(gapi.client.gmail.users.labels.patch)
+                self.labelsUpdate = googleApiBuilder.build(gapi.client.gmail.users.labels.update)
+                // self.messagesDelete = googleApiBuilder.build(gapi.client.gmail.users.messages.delete)
+                self.messagesGet = googleApiBuilder.build(gapi.client.gmail.users.messages.get)
+                // self.messagesImport = googleApiBuilder.build(gapi.client.gmail.users.messages.import)
+                // self.messagesInsert = googleApiBuilder.build(gapi.client.gmail.users.messages.insert)
+                self.messagesList = googleApiBuilder.build(gapi.client.gmail.users.messages.list)
+                self.messagesModify = googleApiBuilder.build(gapi.client.gmail.users.messages.modify)
+                // self.messagesSend = googleApiBuilder.build(gapi.client.gmail.users.messages.send)
+                self.messagesTrash = googleApiBuilder.build(gapi.client.gmail.users.messages.trash)
+                self.messagesUntrash = googleApiBuilder.build(gapi.client.gmail.users.messages.untrash)
+                self.messagesAttachments = googleApiBuilder.build(gapi.client.gmail.users.messages.attachments)
+                // self.threadsDelete = googleApiBuilder.build(gapi.client.gmail.users.threads.delete)
+                // self.threadsGet = googleApiBuilder.build(gapi.client.gmail.users.threads.get)
+                // self.threadsList = googleApiBuilder.build(gapi.client.gmail.users.threads.list)
+                // self.threadsModify = googleApiBuilder.build(gapi.client.gmail.users.threads.modify)
+                // self.threadsTrash = googleApiBuilder.build(gapi.client.gmail.users.threads.trash)
+                // self.threadsUntrash = googleApiBuilder.build(gapi.client.gmail.users.threads.untrash)
+
+
+
+                $rootScope.$broadcast("googleMail:loaded")
+            });
+
+        });
+
+    })
+
+    .service("youtube", function(googleApiBuilder, $rootScope) {
+            var self = this;
+            var itemExtractor = function(resp) { return resp.items; };
+
+            googleApiBuilder.afterClientLoaded(function() {
+                    gapi.client.load('youtube', 'v3', function() {
+
+                        self.activitiesInsert = googleApiBuilder.build(gapi.client.youtube.activities.insert)
+                        self.activitiesList = googleApiBuilder.build(gapi.client.youtube.activities.list)
+                        self.channelBannersInsert = googleApiBuilder.build(gapi.client.youtube.channelBanners.insert)
+                        self.channelSectionsDelete = googleApiBuilder.build(gapi.client.youtube.channelSections.delete)
+                        self.channelSectionsInsert = googleApiBuilder.build(gapi.client.youtube.channelSections.insert)
+                        self.channelSectionsList = googleApiBuilder.build(gapi.client.youtube.channelSections.list)
+                        self.channelSectionsUpdate = googleApiBuilder.build(gapi.client.youtube.channelSections.update)
+                        self.channelsList = googleApiBuilder.build(gapi.client.youtube.channels.list, itemExtractor)
+                        self.channelsUpdate = googleApiBuilder.build(gapi.client.youtube.channels.update)
+                        self.guideCategoriesList = googleApiBuilder.build(gapi.client.youtube.guideCategories.list)
+                        self.i18nLanguagesList = googleApiBuilder.build(gapi.client.youtube.i18nLanguages.list)
+                        self.i18nRegionsList = googleApiBuilder.build(gapi.client.youtube.i18nRegions.list)
+                        self.liveBroadcastsBindcan = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.bindcan)
+                        self.liveBroadcastsControl = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.control)
+                        self.liveBroadcastsDelete = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.delete)
+                        self.liveBroadcastsInsert = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.insert)
+                        self.liveBroadcastsList = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.list)
+                        self.liveBroadcastsTransition = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.transition)
+                        self.liveBroadcastsUpdatecontentDetails = googleApiBuilder.build(gapi.client.youtube.liveBroadcasts.updatecontentDetails)
+                        self.liveStreamsDelete = googleApiBuilder.build(gapi.client.youtube.liveStreams.delete)
+                        self.liveStreamsInsert  = googleApiBuilder.build(gapi.client.youtube.liveStreams.insert )
+                        self.liveStreamsList = googleApiBuilder.build(gapi.client.youtube.liveStreams.list)
+                        self.liveStreamsUpdatestream  = googleApiBuilder.build(gapi.client.youtube.liveStreams.updatestream )
+                        self.playlistItemsDelete = googleApiBuilder.build(gapi.client.youtube.playlistItems.delete)
+                        self.playlistItemsInsert = googleApiBuilder.build(gapi.client.youtube.playlistItems.insert)
+                        self.playlistItemsList = googleApiBuilder.build(gapi.client.youtube.playlistItems.list, itemExtractor)
+                        self.playlistItemsUpdate = googleApiBuilder.build(gapi.client.youtube.playlistItems.update)
+                        self.playlistsDelete = googleApiBuilder.build(gapi.client.youtube.playlists.delete)
+                        self.playlistsInsert = googleApiBuilder.build(gapi.client.youtube.playlists.insert)
+                        self.playlistsList = googleApiBuilder.build(gapi.client.youtube.playlists.list, itemExtractor)
+                        self.playlistsUpdate = googleApiBuilder.build(gapi.client.youtube.playlists.update)
+                        self.searchList = googleApiBuilder.build(gapi.client.youtube.search.list, itemExtractor)
+                        self.subscriptionsDelete = googleApiBuilder.build(gapi.client.youtube.subscriptions.delete)
+                        self.subscriptionsInsert = googleApiBuilder.build(gapi.client.youtube.subscriptions.insert)
+                        self.subscriptionsList = googleApiBuilder.build(gapi.client.youtube.subscriptions.list)
+                        self.thumbnailsSet = googleApiBuilder.build(gapi.client.youtube.thumbnails.set)
+                        self.videoCategoriesList = googleApiBuilder.build(gapi.client.youtube.videoCategories.list)
+                        self.videosDelete = googleApiBuilder.build(gapi.client.youtube.videos.delete)
+                        self.videosGetRating = googleApiBuilder.build(gapi.client.youtube.videos.getRating)
+                        self.videosInsert = googleApiBuilder.build(gapi.client.youtube.videos.insert)
+                        self.videosList = googleApiBuilder.build(gapi.client.youtube.videos.list)
+                        self.videosRate = googleApiBuilder.build(gapi.client.youtube.videos.rate)
+                        self.videosUpdate = googleApiBuilder.build(gapi.client.youtube.videos.update)
+                        self.watermarksSet = googleApiBuilder.build(gapi.client.youtube.watermarks.set)
+                        self.watermarksUnset = googleApiBuilder.build(gapi.client.youtube.watermarks.unset)
+
+                        $rootScope.$broadcast("youtube:loaded")
+                    });
+
+            });
+
+    })
+
+
+	.service("googlePlus", function(googleApiBuilder, $rootScope) {
+
+			var self = this;
+			var itemExtractor = function(resp) { return resp.items; };
+
+			googleApiBuilder.afterClientLoaded(function() {
+					gapi.client.load('plus', 'v1', function() {
+						self.getPeople = googleApiBuilder.build(gapi.client.plus.people.get);
+						self.getCurrentUser = function() {
+							return self.getPeople({userId: "me"});
+						}
+						$rootScope.$broadcast("googlePlus:loaded")
+					});
+
+			});
+
+	})
