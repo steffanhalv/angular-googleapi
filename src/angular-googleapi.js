@@ -50,9 +50,16 @@ angular.module('googleApi', [])
                     return deferred.promise;
                 },
 
-                handleClientLoad: function () {
-                    // gapi.auth.init(function () { });
-                    window.setTimeout(this.checkAuth, 1);
+                handleClientLoad: function (token) {
+                    // gapi.auth.init(function () {
+                    //     console.log('test')
+                    // });
+                    if(token) {
+                        gapi.auth.setToken(token);
+                    }
+                    gapi.client.setApiKey(config.apiKey);
+                    this.checkAuth()
+
                 },
 
                 checkAuth: function() {
@@ -60,12 +67,11 @@ angular.module('googleApi', [])
                 },
 
                 handleAuthResult: function(authResult) {
-                    debugger
                     if (authResult && !authResult.error) {
                         var data = {};
                         $rootScope.$broadcast("google:authenticated", authResult);
                         googleApiBuilder.runClientLoadedCallbacks();
-                        deferred.resolve(data);
+                        deferred.resolve(authResult);
                     } else {
                         deferred.reject(authResult.error);
                     }
@@ -79,15 +85,34 @@ angular.module('googleApi', [])
     .service("googleCalendar", function(googleApiBuilder, $rootScope) {
 
         var self = this;
+        var events = [];
         var itemExtractor = function(resp) { return resp.items; };
 
+        var getAllEvents = function(resp) {
+            events = events.concat(itemExtractor(resp));
+            if (resp.nextPageToken) {
+                self.listEvents({
+                    calendarId: self.calendarId,
+                    pageToken: resp.nextPageToken
+                });
+            }
+
+            return events;
+        }
+
+        var getEvents = function(args) {
+            self.calendarId = args.calendarId;
+            return googleApiBuilder.build(gapi.client.calendar.events.list, getAllEvents)(args);
+        }
         googleApiBuilder.afterClientLoaded(function() {
             gapi.client.load('calendar', 'v3', function() {
 
-                self.listEvents = googleApiBuilder.build(gapi.client.calendar.events.list, itemExtractor);
+                self.listEvents = googleApiBuilder.build(gapi.client.calendar.events.list);
                 self.listCalendars = googleApiBuilder.build(gapi.client.calendar.calendarList.list, itemExtractor);
                 self.createEvent = googleApiBuilder.build(gapi.client.calendar.events.insert);
-
+                self.updateEvent = googleApiBuilder.build(gapi.client.calendar.events.update);
+                self.removeEvent = googleApiBuilder.build(gapi.client.calendar.events.delete);
+                self.loaded = true
                 $rootScope.$broadcast("googleCalendar:loaded")
             });
 
@@ -149,7 +174,7 @@ angular.module('googleApi', [])
                 // self.threadsUntrash = googleApiBuilder.build(gapi.client.gmail.users.threads.untrash)
 
 
-
+                self.loaded = true;
                 $rootScope.$broadcast("googleMail:loaded")
             });
 
@@ -160,6 +185,7 @@ angular.module('googleApi', [])
     .service("youtube", function(googleApiBuilder, $rootScope) {
             var self = this;
             var itemExtractor = function(resp) { return resp.items; };
+
 
             googleApiBuilder.afterClientLoaded(function() {
                     gapi.client.load('youtube', 'v3', function() {
@@ -210,6 +236,7 @@ angular.module('googleApi', [])
                         self.watermarksSet = googleApiBuilder.build(gapi.client.youtube.watermarks.set)
                         self.watermarksUnset = googleApiBuilder.build(gapi.client.youtube.watermarks.unset)
 
+                        self.loaded = true
                         $rootScope.$broadcast("youtube:loaded")
                     });
 
@@ -217,6 +244,36 @@ angular.module('googleApi', [])
 
     })
 
+    .service("googleTasks", function(googleApiBuilder, $rootScope) {
+
+            var self = this;
+            var itemExtractor = function(resp) { return resp.items; };
+
+            googleApiBuilder.afterClientLoaded(function() {
+                    gapi.client.load('tasks', 'v1', function() {
+                        self.deleteList = googleApiBuilder.build(gapi.client.tasks.tasklists.delete);
+                        self.getList = googleApiBuilder.build(gapi.client.tasks.tasklists.get);
+                        self.insertList = googleApiBuilder.build(gapi.client.tasks.tasklists.insert);
+                        self.listList = googleApiBuilder.build(gapi.client.tasks.tasklists.list);
+                        self.patchList = googleApiBuilder.build(gapi.client.tasks.tasklists.patch);
+                        self.updateList = googleApiBuilder.build(gapi.client.tasks.tasklists.update);
+
+                        self.clear = googleApiBuilder.build(gapi.client.tasks.tasks.clear);
+                        self.delete = googleApiBuilder.build(gapi.client.tasks.tasks.delete);
+                        self.get = googleApiBuilder.build(gapi.client.tasks.tasks.get);
+                        self.insert = googleApiBuilder.build(gapi.client.tasks.tasks.insert);
+                        self.list = googleApiBuilder.build(gapi.client.tasks.tasks.list);
+                        self.move = googleApiBuilder.build(gapi.client.tasks.tasks.move);
+                        self.patch = googleApiBuilder.build(gapi.client.tasks.tasks.patch);
+                        self.update = googleApiBuilder.build(gapi.client.tasks.tasks.update);
+                        self.loaded = true
+
+                        $rootScope.$broadcast("googleTasks:loaded")
+                    });
+
+            });
+
+    })
 
 	.service("googlePlus", function(googleApiBuilder, $rootScope) {
 
