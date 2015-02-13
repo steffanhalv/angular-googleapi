@@ -45,21 +45,14 @@ angular.module('googleApi', [])
             var deferred = $q.defer();
             return {
                 login: function () {
-                    gapi.auth.authorize({ client_id: config.clientId, scope: config.scopes, immediate: false }, this.handleAuthResult);
+                    gapi.auth.authorize({ client_id: config.clientId, scope: config.scopes, immediate: false}, this.handleAuthResult);
 
                     return deferred.promise;
                 },
 
-                handleClientLoad: function (token) {
-                    // gapi.auth.init(function () {
-                    //     console.log('test')
-                    // });
-                    if(token) {
-                        gapi.auth.setToken(token);
-                    }
-                    gapi.client.setApiKey(config.apiKey);
-                    this.checkAuth()
-
+                handleClientLoad: function () {
+                    gapi.auth.init(function () { });
+                    window.setTimeout(checkAuth, 1);
                 },
 
                 checkAuth: function() {
@@ -67,11 +60,12 @@ angular.module('googleApi', [])
                 },
 
                 handleAuthResult: function(authResult) {
+                    debugger
                     if (authResult && !authResult.error) {
                         var data = {};
                         $rootScope.$broadcast("google:authenticated", authResult);
                         googleApiBuilder.runClientLoadedCallbacks();
-                        deferred.resolve(authResult);
+                        deferred.resolve(data);
                     } else {
                         deferred.reject(authResult.error);
                     }
@@ -85,34 +79,15 @@ angular.module('googleApi', [])
     .service("googleCalendar", function(googleApiBuilder, $rootScope) {
 
         var self = this;
-        var events = [];
         var itemExtractor = function(resp) { return resp.items; };
 
-        var getAllEvents = function(resp) {
-            events = events.concat(itemExtractor(resp));
-            if (resp.nextPageToken) {
-                self.listEvents({
-                    calendarId: self.calendarId,
-                    pageToken: resp.nextPageToken
-                });
-            }
-
-            return events;
-        }
-
-        var getEvents = function(args) {
-            self.calendarId = args.calendarId;
-            return googleApiBuilder.build(gapi.client.calendar.events.list, getAllEvents)(args);
-        }
         googleApiBuilder.afterClientLoaded(function() {
             gapi.client.load('calendar', 'v3', function() {
 
-                self.listEvents = googleApiBuilder.build(gapi.client.calendar.events.list);
+                self.listEvents = googleApiBuilder.build(gapi.client.calendar.events.list, itemExtractor);
                 self.listCalendars = googleApiBuilder.build(gapi.client.calendar.calendarList.list, itemExtractor);
                 self.createEvent = googleApiBuilder.build(gapi.client.calendar.events.insert);
-                self.updateEvent = googleApiBuilder.build(gapi.client.calendar.events.update);
-                self.removeEvent = googleApiBuilder.build(gapi.client.calendar.events.delete);
-                self.loaded = true
+
                 $rootScope.$broadcast("googleCalendar:loaded")
             });
 
